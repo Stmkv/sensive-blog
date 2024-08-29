@@ -4,7 +4,7 @@ from django.db.models import Count
 
 
 def get_related_posts_count(tag):
-    return tag.posts.count()
+    return tag.posts.count
 
 
 def serialize_post(post):
@@ -30,14 +30,13 @@ def serialize_tag(tag):
 
 def index(request):
     posts = Post.objects.annotate(count=Count("likes")).order_by("-count")
-    most_popular_posts = list(posts)[-5:]
+    most_popular_posts = list(posts)[:5]
 
     fresh_posts = Post.objects.order_by("published_at")
     most_fresh_posts = list(fresh_posts)[-5:]
 
-    tags = Tag.objects.all()
-    popular_tags = sorted(tags, key=get_related_posts_count)
-    most_popular_tags = popular_tags[-5:]
+    tags = Tag.objects.annotate(posts_count=Count("posts")).order_by("-posts_count")
+    most_popular_tags = tags[:5]
 
     context = {
         "most_popular_posts": [serialize_post(post) for post in most_popular_posts],
