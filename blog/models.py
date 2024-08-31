@@ -6,36 +6,42 @@ from django.db.models import Count
 
 class PostQuerySet(models.QuerySet):
 
+    def year(self, year):
+        posts_at_year = self.filter(published_at__year=year).order_by('published_at')
+        return posts_at_year
+
     def popular(self):
-        posts_by_likes_count = self.annotate(likes_count=Count('likes')) \
-            .order_by('-likes_count')
-        return posts_by_likes_count
+        popular_posts = self.annotate(
+            post_count=Count('likes', distinct=True)
+        ).order_by('-post_count')
+        return popular_posts
+
+    def fresh(self):
+        fresh_posts = self.annotate(
+            post_count=Count('likes', distinct=True)
+        ).order_by('-published_at')
+        return fresh_posts
 
     def fetch_with_comments_count(self):
         posts_ids = [post.id for post in self]
-        posts_with_comments_count_field = self.model.objects \
-            .filter(id__in=posts_ids) \
-            .annotate(comments_count=Count('comments'))
-        ids_and_comments_count = posts_with_comments_count_field \
-            .values_list('id', 'comments_count')
-        count_for_id = dict(ids_and_comments_count)
+        posts_with_comments = Post.objects.filter(id__in=posts_ids).annotate(
+            comments_count=Count('comments'))
+        ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+        count_for_id = dict(ids_and_comments)
         for post in self:
             post.comments_count = count_for_id[post.id]
-
-        return list(self)
+        return self
 
 
 class TagQuerySet(models.QuerySet):
 
     def popular(self):
-        tags_by_posts_count = self.annotate(posts_count=Count('posts')) \
-            .order_by('-posts_count')
-        return tags_by_posts_count
+        most_popular_tags = self.annotate(post_count=Count('posts')).order_by('-post_count')
+        return most_popular_tags
 
 
 class Post(models.Model):
     objects = PostQuerySet.as_manager()
-
     title = models.CharField('Заголовок', max_length=200)
     text = models.TextField('Текст')
     slug = models.SlugField('Название в виде url', max_length=200)
@@ -71,7 +77,6 @@ class Post(models.Model):
 
 class Tag(models.Model):
     objects = TagQuerySet.as_manager()
-
     title = models.CharField('Тег', max_length=20, unique=True)
 
     def __str__(self):
@@ -93,13 +98,12 @@ class Comment(models.Model):
     post = models.ForeignKey(
         'Post',
         on_delete=models.CASCADE,
-        verbose_name='Пост, к которому написан',
-        related_name='comments')
+        related_name='comments',
+        verbose_name='Пост, к которому написан')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор',
-        related_name='comments')
+        verbose_name='Автор')
 
     text = models.TextField('Текст комментария')
     published_at = models.DateTimeField('Дата и время публикации')
