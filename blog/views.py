@@ -49,15 +49,14 @@ def index(request):
 
 def post_detail(request, slug):
     post = get_object_or_404(
-        Post.objects.annotate(likes_count=Count("likes")).prefetch_related("tags", "author"),
+        Post.objects.annotate(likes_count=Count("likes"))
+        .select_related("author")
+        .prefetch_related("tags", "author"),
         slug=slug,
     )
 
-    comments = (
-        post.coments.select_related("post")
-        .filter(post=post)
-        .annotate(author_username=F("author__username"))
-        .values("text", "published_at", "author_username")
+    comments = post.comments.annotate(author_username=F("author__username")).values(
+        "text", "published_at", "author_username"
     )
 
     related_tags = Tag.objects.popular()
