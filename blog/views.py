@@ -1,4 +1,4 @@
-from django.db.models import Count, F, Prefetch
+from django.db.models import Count, F
 from django.shortcuts import get_object_or_404, render
 
 from blog.models import Comment, Post, Tag
@@ -33,15 +33,7 @@ def index(request):
     most_fresh_posts = (
         Post.objects.fresh()
         .count_number_tags()
-        .prefetch_related(
-            Prefetch("author"),
-            Prefetch(
-                "tags",
-                queryset=Tag.objects.order_by("title").annotate(
-                    posts_with_tag_count=Count("posts")
-                ),
-            ),
-        )
+        .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
 
@@ -87,15 +79,7 @@ def post_detail(request, slug):
     most_popular_posts = (
         Post.objects.popular()
         .count_number_tags()
-        .prefetch_related(
-            Prefetch("author"),
-            Prefetch(
-                "tags",
-                queryset=Tag.objects.order_by("title").annotate(
-                    posts_with_tag_count=Count("posts")
-                ),
-            ),
-        )
+        .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
 
@@ -117,30 +101,14 @@ def tag_filter(request, tag_title):
     most_popular_posts = (
         Post.objects.popular()
         .count_number_tags()
-        .prefetch_related(
-            Prefetch("author"),
-            Prefetch(
-                "tags",
-                queryset=Tag.objects.order_by("title").annotate(
-                    posts_with_tag_count=Count("posts")
-                ),
-            ),
-        )
+        .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
 
     related_posts = (
         Post.objects.filter(tags=tag)
         .annotate(comments_count=Count("comments"))
-        .prefetch_related(
-            Prefetch("author"),
-            Prefetch(
-                "tags",
-                queryset=Tag.objects.order_by("title").annotate(
-                    posts_with_tag_count=Count("posts")
-                ),
-            ),
-        )
+        .create_selection_author_and_tag()
         .all()[:20]
     )
 
