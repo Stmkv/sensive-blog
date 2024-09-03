@@ -28,6 +28,10 @@ class PostQuerySet(models.QuerySet):
             post.comments_count = count_for_id[post.id]
         return self
 
+    def count_number_tags(self):
+        tags_count = self.annotate(tags_count=Count("tags"))
+        return tags_count
+
     def create_selection_author_and_tag(self):
         return self.prefetch_related(
             Prefetch("author"),
