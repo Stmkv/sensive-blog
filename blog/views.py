@@ -25,14 +25,14 @@ def serialize_tag(tag):
 def index(request):
     most_popular_posts = (
         Post.objects.popular()
-        .count_number_tags()
+        .count_tags()
         .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
 
     most_fresh_posts = (
         Post.objects.fresh()
-        .count_number_tags()
+        .count_tags()
         .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
@@ -54,7 +54,7 @@ def post_detail(request, slug):
     )
 
     comments = (
-        Comment.objects.select_related("post")
+        post.coments.select_related("post")
         .filter(post=post)
         .annotate(author_username=F("author__username"))
         .values("text", "published_at", "author_username")
@@ -78,7 +78,7 @@ def post_detail(request, slug):
 
     most_popular_posts = (
         Post.objects.popular()
-        .count_number_tags()
+        .count_tags()
         .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
@@ -100,13 +100,14 @@ def tag_filter(request, tag_title):
 
     most_popular_posts = (
         Post.objects.popular()
-        .count_number_tags()
+        .count_tags()
         .create_selection_author_and_tag()
         .fetch_with_comments_count()[:5]
     )
 
     related_posts = (
         Post.objects.filter(tags=tag)
+        .select_related("author")
         .annotate(comments_count=Count("comments"))
         .create_selection_author_and_tag()
         .all()[:20]

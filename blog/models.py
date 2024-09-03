@@ -28,7 +28,7 @@ class PostQuerySet(models.QuerySet):
             post.comments_count = count_for_id[post.id]
         return self
 
-    def count_number_tags(self):
+    def count_tags(self):
         tags_count = self.annotate(tags_count=Count("tags"))
         return tags_count
 
