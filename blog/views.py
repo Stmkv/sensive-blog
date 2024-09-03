@@ -62,7 +62,8 @@ def post_detail(request, slug):
     )
 
     comments = (
-        Comment.objects.filter(post=post)
+        Comment.objects.select_related("post")
+        .filter(post=post)
         .annotate(author_username=F("author__username"))
         .values("text", "published_at", "author_username")
     )
